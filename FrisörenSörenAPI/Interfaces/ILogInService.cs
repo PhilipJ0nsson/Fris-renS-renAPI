@@ -10,5 +10,7 @@ namespace FrisörenSörenAPI.Interfaces
 
         bool IsCompany(HttpContext context);
         bool IsCustomer(HttpContext context);
+
+        Task<Customer> GetLoggedInCustomer(HttpContext context);
     }
 }

@@ -37,5 +37,14 @@ namespace FrisörenSörenAPI.Repositories
             var userRole = context.Session.GetString("UserRole");
             return userRole == "Customer";
         }
+        public async Task<Customer> GetLoggedInCustomer(HttpContext context)
+        {
+            var userEmail = context.Session.GetString("UserEmail");
+            if (string.IsNullOrEmpty(userEmail))
+            {
+                return null;
+            }
+            return await _context.Customers.FirstOrDefaultAsync(c => c.Email == userEmail);
+        }
     }
 }

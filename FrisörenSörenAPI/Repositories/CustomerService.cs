@@ -1,4 +1,5 @@
 ﻿using FrisörenSörenAPI.Data;
+using FrisörenSörenAPI.Dto;
 using FrisörenSörenAPI.Interfaces;
 using FrisörenSörenModels;
 using Microsoft.EntityFrameworkCore;
@@ -27,7 +28,7 @@ namespace FrisörenSörenAPI.Repositories
             return await _context.Customers.ToListAsync();
         }
 
-        public async Task<IEnumerable<Customer>> GetCustomersWithBookingsThisWeek()
+        public async Task<IEnumerable<CustomerDto>> GetCustomersWithBookingsThisWeek()
         {
             var currentWeek = CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(DateTime.Now, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday);
 
@@ -36,16 +37,25 @@ namespace FrisörenSörenAPI.Repositories
                 .Include(c => c.Bookings)
                 .ToListAsync();
 
-            // Filtrera kunder baserat på bokningar för den aktuella veckan
+            // Filtrera kunder baserat på bokningar för den aktuella veckan och skapa en ny lista med filtrerade bokningar
             var customersThisWeek = customersWithBookings
-                .Where(c => c.Bookings.Any(b => CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(b.StartTime, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday) == currentWeek))
-                .ToList(); // Omvandla till lista för att filtrera lokalt på klienten
-
-            // Om inga kunder hittades med bokningar för den aktuella veckan
-            if (customersThisWeek.Count == 0)
-            {
-                return new List<Customer>(); // Returnera en tom lista
-            }
+                .Select(c => new CustomerDto
+                {
+                    CustomerId = c.CustomerId,
+                    CustomerName = c.CustomerName,
+                    Email = c.Email,
+                    Bookings = c.Bookings
+                        .Where(b => CultureInfo.CurrentCulture.Calendar.GetWeekOfYear(b.StartTime, CalendarWeekRule.FirstFourDayWeek, DayOfWeek.Monday) == currentWeek)
+                        .Select(b => new BookingDto
+                        {
+                            BookingId = b.BookingId,
+                            StartTime = b.StartTime,
+                            EndTime = b.EndTime
+                        })
+                        .ToList()
+                })
+                .Where(c => c.Bookings.Any()) // Endast inkludera kunder som har bokningar denna veckan
+                .ToList();
 
             return customersThisWeek;
         }

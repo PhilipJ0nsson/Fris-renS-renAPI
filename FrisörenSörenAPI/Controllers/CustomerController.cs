@@ -22,44 +22,84 @@ namespace FrisörenSörenAPI.Controllers
             _bookingService = bookingService;
             _mapper = mapper;
         }
-        [Authorize(Roles = "Customer")]
         [HttpPost("Customer/{customerId}/addBooking")]
         public async Task<ActionResult<BookingDto>> CustomerAddBooking(int customerId, [FromBody] BookingDto bookingDto)
         {
             try
             {
-                var addedBooking = await _bookingService.CustomerAddBooking(customerId, bookingDto);
+                var userEmail = HttpContext.Session.GetString("UserEmail");
+                if (string.IsNullOrEmpty(userEmail))
+                {
+                    return Unauthorized("User not logged in.");
+                }
+
+                var addedBooking = await _bookingService.CustomerAddBooking(customerId, bookingDto, userEmail);
                 return CreatedAtAction(nameof(GetBookingById), new { id = addedBooking.BookingId }, addedBooking);
             }
             catch (ArgumentException ex)
             {
                 return BadRequest(ex.Message);
             }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
-        [Authorize(Roles = "Customer")]
+
         [HttpPut("CustomerUpdate/{bookingId}")]
         public async Task<ActionResult<BookingDto>> CustomerUpdateBooking(int bookingId, [FromBody] BookingDto bookingDto)
         {
             try
             {
-                var updatedBooking = await _bookingService.CustomerUpdateBooking(bookingId, bookingDto);
+                var userEmail = HttpContext.Session.GetString("UserEmail");
+                if (string.IsNullOrEmpty(userEmail))
+                {
+                    return Unauthorized("User not logged in.");
+                }
+
+                var updatedBooking = await _bookingService.CustomerUpdateBooking(bookingId, bookingDto, userEmail);
                 return Ok(updatedBooking);
             }
             catch (ArgumentException ex)
             {
                 return NotFound(ex.Message);
             }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
-        [Authorize(Roles = "Customer")]
-        [HttpDelete("CustomerDelete")]
+        [HttpDelete("CustomerDelete/{bookingId}")]
         public async Task<ActionResult> CustomerDeleteBooking(int bookingId)
         {
-            var result = await _bookingService.CustomerDeleteBooking(bookingId);
-            if (!result)
+            try
             {
-                return NotFound();
+                var userEmail = HttpContext.Session.GetString("UserEmail");
+                if (string.IsNullOrEmpty(userEmail))
+                {
+                    return Unauthorized("User not logged in.");
+                }
+
+                var result = await _bookingService.CustomerDeleteBooking(bookingId, userEmail);
+                if (!result)
+                {
+                    return NotFound();
+                }
+
+                return NoContent();
             }
-            return NoContent();
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
+            catch (Exception)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError);
+            }
         }
 
         [HttpGet("{id}")]

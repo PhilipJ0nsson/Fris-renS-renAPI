@@ -1,4 +1,5 @@
-﻿using FrisörenSörenModels;
+﻿using FrisörenSörenAPI.Dto;
+using FrisörenSörenModels;
 
 namespace FrisörenSörenAPI.Interfaces
 {
@@ -6,7 +7,7 @@ namespace FrisörenSörenAPI.Interfaces
     {
         Task<Customer> GetCustomerById(int customerId);
         Task<IEnumerable<Customer>> GetAllCustomers();
-        Task<IEnumerable<Customer>> GetCustomersWithBookingsThisWeek();
+        Task<IEnumerable<CustomerDto>> GetCustomersWithBookingsThisWeek();
         Task<int> GetBookingCountForCustomerInWeek(int customerId, int weekNumber);
     }
 }
